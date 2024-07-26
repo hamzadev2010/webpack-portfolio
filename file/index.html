@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku Solver</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+  background: linear-gradient(to right, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: #fff;
+    }
+    .container {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .title {
+      font-size: 28px;
+      margin-bottom: 10px;
+      text-align: center;
+      color: #333;
+    }
+    .size-dropdown {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .size-dropdown label {
+      font-size: 18px;
+      margin-right: 10px;
+      color: #333;
+    }
+    .size-dropdown select {
+      font-size: 16px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .sudoku-grid {
+      display: grid;
+      gap: 2px;
+      margin-top: 20px;
+      perspective: 1000px;
+      transform: rotateX(10deg);
+    }
+    .sudoku-cell {
+      width: 40px;
+      height: 40px;
+      text-align: center;
+      font-size: 20px;
+      border: 1px solid #000;
+      background-color: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .sudoku-cell:focus {
+      outline: none;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+    button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      text-align: center;
+      margin: 10px auto;
+      display: block;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="title">Sudoku Solver</h1>
+      <div class="size-dropdown">
+        <label for="gridSelect">Select Grid Size:</label>
+        <select id="gridSelect">
+          <option value="3">3x3</option>
+          <option value="6">6x6</option>
+          <option value="9" selected>9x9</option>
+        </select>
+      </div>
+      <button id="solveButton">Solve</button>
+    </header>
+    <div class="sudoku-grid" id="sudokuGrid"></div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const gridSizeElement = document.getElementById('gridSelect');
+      const solveButton = document.getElementById('solveButton');
+      const sudokuGrid = document.getElementById('sudokuGrid');
+
+      function createGrid(size) {
+        sudokuGrid.innerHTML = '';
+        sudokuGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        for (let i = 0; i < size * size; i++) {
+          const cell = document.createElement('input');
+          cell.type = 'text';
+          cell.className = 'sudoku-cell';
+          sudokuGrid.appendChild(cell);
+        }
+      }
+
+      function readGrid() {
+        const size = parseInt(gridSizeElement.value);
+        const cells = sudokuGrid.querySelectorAll('.sudoku-cell');
+        const grid = [];
+        for (let i = 0; i < size; i++) {
+          const row = [];
+          for (let j = 0; j < size; j++) {
+            const value = cells[i * size + j].value;
+            row.push(value ? parseInt(value) : 0);
+          }
+          grid.push(row);
+        }
+        return grid;
+      }
+
+      function updateGrid(solution) {
+        const size = parseInt(gridSizeElement.value);
+        const cells = sudokuGrid.querySelectorAll('.sudoku-cell');
+        for (let i = 0; i < size; i++) {
+          for (let j = 0; j < size; j++) {
+            cells[i * size + j].value = solution[i][j];
+          }
+        }
+      }
+
+      async function solveSudoku() {
+        const grid = readGrid();
+        try {
+          const response = await fetch('http://localhost:5000/solve', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ grid })
+          });
+          if (!response.ok) {
+            throw new Error('No solution exists');
+          }
+          const solution = await response.json();
+          updateGrid(solution);
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+
+      gridSizeElement.addEventListener('change', () => createGrid(parseInt(gridSizeElement.value)));
+      solveButton.addEventListener('click', solveSudoku);
+
+      // Initial grid creation
+      createGrid(parseInt(gridSizeElement.value));
+    });
+  </script>
+</body>
+</html>
